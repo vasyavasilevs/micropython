@@ -3,8 +3,8 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2016 Damien P. George
- * Copyright (c) 2016 Paul Sokolovsky
+ * Copyright (c) 2013-2023 Damien P. George
+ * Copyright (c) 2015 Paul Sokolovsky
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +24,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef MICROPY_INCLUDED_EXTMOD_MISC_H
-#define MICROPY_INCLUDED_EXTMOD_MISC_H
 
-// This file contains cumulative declarations for extmod/ .
+// This file is never compiled standalone, it's included directly from
+// extmod/modmachine.c via MICROPY_PY_MACHINE_INCLUDEFILE.
 
-#include <stddef.h>
-#include "py/runtime.h"
+// This variable is needed for machine.soft_reset(), but the variable is otherwise unused.
+int pyexec_system_exit = 0;
 
-MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(mp_os_dupterm_obj);
-
-#if MICROPY_PY_OS_DUPTERM
-bool mp_os_dupterm_is_builtin_stream(mp_const_obj_t stream);
-void mp_os_dupterm_stream_detached_attached(mp_obj_t stream_detached, mp_obj_t stream_attached);
-uintptr_t mp_os_dupterm_poll(uintptr_t poll_flags);
-int mp_os_dupterm_rx_chr(void);
-int mp_os_dupterm_tx_strn(const char *str, size_t len);
-void mp_os_deactivate(size_t dupterm_idx, const char *msg, mp_obj_t exc);
-#else
-static inline int mp_os_dupterm_tx_strn(__attribute__((unused)) const char *s, __attribute__((unused)) size_t l) {
-    return -1;
+uintptr_t mod_machine_mem_get_addr(mp_obj_t addr_o, uint align) {
+    uintptr_t addr = mp_obj_get_int_truncated(addr_o);
+    if ((addr & (align - 1)) != 0) {
+        mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("address %08x is not aligned to %d bytes"), addr, align);
+    }
+    return addr;
 }
-#endif
 
-#endif // MICROPY_INCLUDED_EXTMOD_MISC_H
+static void mp_machine_idle(void) {
+    #ifdef MICROPY_UNIX_MACHINE_IDLE
+    MICROPY_UNIX_MACHINE_IDLE
+    #else
+    // Do nothing.
+    #endif
+}

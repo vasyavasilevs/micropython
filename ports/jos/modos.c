@@ -3,8 +3,8 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2016 Damien P. George
- * Copyright (c) 2016 Paul Sokolovsky
+ * Copyright (c) 2014-2018 Paul Sokolovsky
+ * Copyright (c) 2017-2022 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +24,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef MICROPY_INCLUDED_EXTMOD_MISC_H
-#define MICROPY_INCLUDED_EXTMOD_MISC_H
 
-// This file contains cumulative declarations for extmod/ .
+#include "helpers.h"
 
-#include <stddef.h>
 #include "py/runtime.h"
+#include "py/mphal.h"
 
-MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(mp_os_dupterm_obj);
+static mp_obj_t mp_os_system(mp_obj_t cmd_in) {
+    const char *cmd = mp_obj_str_get_str(cmd_in);
 
-#if MICROPY_PY_OS_DUPTERM
-bool mp_os_dupterm_is_builtin_stream(mp_const_obj_t stream);
-void mp_os_dupterm_stream_detached_attached(mp_obj_t stream_detached, mp_obj_t stream_attached);
-uintptr_t mp_os_dupterm_poll(uintptr_t poll_flags);
-int mp_os_dupterm_rx_chr(void);
-int mp_os_dupterm_tx_strn(const char *str, size_t len);
-void mp_os_deactivate(size_t dupterm_idx, const char *msg, mp_obj_t exc);
-#else
-static inline int mp_os_dupterm_tx_strn(__attribute__((unused)) const char *s, __attribute__((unused)) size_t l) {
-    return -1;
+    MP_THREAD_GIL_EXIT();
+    int r = system(cmd);
+    MP_THREAD_GIL_ENTER();
+
+    if (r == -1) {
+        mp_raise_OSError(r);
+    }
+
+    return MP_OBJ_NEW_SMALL_INT(r);
 }
-#endif
+static MP_DEFINE_CONST_FUN_OBJ_1(mp_os_system_obj, mp_os_system);
 
-#endif // MICROPY_INCLUDED_EXTMOD_MISC_H
+static mp_obj_t mp_os_urandom(mp_obj_t num) {
+    mp_int_t n = mp_obj_get_int(num);
+    vstr_t vstr;
+    vstr_init_len(&vstr, n);
+    mp_hal_get_random(n, vstr.buf);
+    return mp_obj_new_bytes_from_vstr(&vstr);
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(mp_os_urandom_obj, mp_os_urandom);

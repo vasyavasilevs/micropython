@@ -3,8 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2016 Damien P. George
- * Copyright (c) 2016 Paul Sokolovsky
+ * Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +23,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef MICROPY_INCLUDED_EXTMOD_MISC_H
-#define MICROPY_INCLUDED_EXTMOD_MISC_H
 
-// This file contains cumulative declarations for extmod/ .
+void mp_thread_init(void);
+void mp_thread_deinit(void);
+void mp_thread_gc_others(void);
 
-#include <stddef.h>
-#include "py/runtime.h"
-
-MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(mp_os_dupterm_obj);
-
-#if MICROPY_PY_OS_DUPTERM
-bool mp_os_dupterm_is_builtin_stream(mp_const_obj_t stream);
-void mp_os_dupterm_stream_detached_attached(mp_obj_t stream_detached, mp_obj_t stream_attached);
-uintptr_t mp_os_dupterm_poll(uintptr_t poll_flags);
-int mp_os_dupterm_rx_chr(void);
-int mp_os_dupterm_tx_strn(const char *str, size_t len);
-void mp_os_deactivate(size_t dupterm_idx, const char *msg, mp_obj_t exc);
-#else
-static inline int mp_os_dupterm_tx_strn(__attribute__((unused)) const char *s, __attribute__((unused)) size_t l) {
-    return -1;
-}
-#endif
-
-#endif // MICROPY_INCLUDED_EXTMOD_MISC_H
+// Unix version of "enable/disable IRQs".
+// Functions as a port-global lock for any code that must be serialised.
+void mp_thread_unix_begin_atomic_section(void);
+void mp_thread_unix_end_atomic_section(void);
